@@ -1,0 +1,9 @@
+C:\Users\Bradyn the Great\infosechonors\target\debug\deps\unicode_segmentation-cea625242e78b186.rmeta: C:\Users\Bradyn\ the\ Great\.cargo\registry\src\github.com-1ecc6299db9ec823\unicode-segmentation-1.6.0\src\lib.rs C:\Users\Bradyn\ the\ Great\.cargo\registry\src\github.com-1ecc6299db9ec823\unicode-segmentation-1.6.0\src\grapheme.rs C:\Users\Bradyn\ the\ Great\.cargo\registry\src\github.com-1ecc6299db9ec823\unicode-segmentation-1.6.0\src\tables.rs C:\Users\Bradyn\ the\ Great\.cargo\registry\src\github.com-1ecc6299db9ec823\unicode-segmentation-1.6.0\src\word.rs C:\Users\Bradyn\ the\ Great\.cargo\registry\src\github.com-1ecc6299db9ec823\unicode-segmentation-1.6.0\src\sentence.rs
+
+C:\Users\Bradyn the Great\infosechonors\target\debug\deps\unicode_segmentation-cea625242e78b186.d: C:\Users\Bradyn\ the\ Great\.cargo\registry\src\github.com-1ecc6299db9ec823\unicode-segmentation-1.6.0\src\lib.rs C:\Users\Bradyn\ the\ Great\.cargo\registry\src\github.com-1ecc6299db9ec823\unicode-segmentation-1.6.0\src\grapheme.rs C:\Users\Bradyn\ the\ Great\.cargo\registry\src\github.com-1ecc6299db9ec823\unicode-segmentation-1.6.0\src\tables.rs C:\Users\Bradyn\ the\ Great\.cargo\registry\src\github.com-1ecc6299db9ec823\unicode-segmentation-1.6.0\src\word.rs C:\Users\Bradyn\ the\ Great\.cargo\registry\src\github.com-1ecc6299db9ec823\unicode-segmentation-1.6.0\src\sentence.rs
+
+C:\Users\Bradyn\ the\ Great\.cargo\registry\src\github.com-1ecc6299db9ec823\unicode-segmentation-1.6.0\src\lib.rs:
+C:\Users\Bradyn\ the\ Great\.cargo\registry\src\github.com-1ecc6299db9ec823\unicode-segmentation-1.6.0\src\grapheme.rs:
+C:\Users\Bradyn\ the\ Great\.cargo\registry\src\github.com-1ecc6299db9ec823\unicode-segmentation-1.6.0\src\tables.rs:
+C:\Users\Bradyn\ the\ Great\.cargo\registry\src\github.com-1ecc6299db9ec823\unicode-segmentation-1.6.0\src\word.rs:
+C:\Users\Bradyn\ the\ Great\.cargo\registry\src\github.com-1ecc6299db9ec823\unicode-segmentation-1.6.0\src\sentence.rs:
