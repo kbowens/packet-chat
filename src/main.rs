@@ -7,23 +7,18 @@ use std::{
     time::{Duration, Instant},
 };
 use tui::Terminal;
-use tui::backend::{CrosstermBackend, Backend};
-use tui::widgets::{Widget, Block, Borders};
-use tui::layout::{Layout, Constraint, Direction};
-use tui::Frame;
+use tui::backend::{CrosstermBackend};
 use argh::FromArgs;
 use crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event as CEvent, KeyCode},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use anyhow::{Result, Error};
 
-struct Model {
-	input: String,
-	currentWindow: i8,
-    should_quit: bool,
-}
+mod draw;
+mod model;
+use draw::draw;
+use model::Model;
 
 enum Event<I> {
     Input(I),
@@ -56,7 +51,7 @@ fn main() -> anyhow::Result<()> {
 
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
-    let mut model = Model {
+    let mut model = model::Model {
         input: "".to_string(), 
         currentWindow: 0,
         should_quit: false,
@@ -78,22 +73,22 @@ fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
-fn draw<B: Backend>(f: &mut Frame<B>, model: &Model) {
-    let size = f.size();
-    let block = Block::default()
-        .title("infosechonors")
-        .borders(Borders::ALL);
-    f.render_widget(block, size);
-}
+
 
 fn update(rx: &mpsc::Receiver<Event<CEvent>>, model: &mut Model) -> anyhow::Result<()> {
     match rx.recv()? {
         Event::Input(event) => match event {
             CEvent::Key(kevent) => {
                 model.should_quit = true;
+            }, 
+            CEvent::Mouse(mevent) => {
+
+            },
+            CEvent::Resize(rh, rw) => {
+
             }
         },
-        Tick => {
+        Event::Tick => {
 
         }
     }
