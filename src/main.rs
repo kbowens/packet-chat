@@ -22,6 +22,12 @@ use anyhow::{Result, Error};
 struct Model {
 	input: String,
 	currentWindow: i8,
+    should_quit: bool,
+}
+
+enum Event<I> {
+    Input(I),
+    Tick,
 }
 
 /// CLI input
@@ -42,22 +48,33 @@ fn main() -> anyhow::Result<()> {
 
 	enable_raw_mode()?;
 
+    let (tx, rx) = mpsc::channel();
+
     let mut stdout = stdout();
     execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
 
     let backend = CrosstermBackend::new(stdout);
+    let mut model = Model {
+        input: "".to_string(), 
+        currentWindow: 0,
+        should_quit: false,
+    };
     let mut terminal = Terminal::new(backend)?;
-    let _draw = terminal.draw(|f| {
-        let size = f.size();
-        let block = Block::default()
-            .title("Block")
-            .borders(Borders::ALL);
-        f.render_widget(block, size);
-    });
+    loop {
+        let _draw = terminal.draw(|f| draw(f, &mut model));
+        update(&rx);
+        if model.should_quit {
+            break;
+        }
+    }
 
     Ok(())
 }
 
 fn draw<B: Backend>(f: &mut Frame<B>, model: &mut Model) {
+
+}
+
+fn update(rx: &mpsc::Receiver<Event<String>>) {
 
 }
