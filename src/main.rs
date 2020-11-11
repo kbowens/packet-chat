@@ -56,6 +56,33 @@ fn main() -> anyhow::Result<()> {
         currentWindow: 0,
         should_quit: false,
     };
+
+    let tick_rate = Duration::from_millis(cli.tick_rate);
+    thread::spawn(move || {
+        let mut last_tick = Instant::now();
+        loop {
+            let timeout = tick_rate
+                .checked_sub(last_tick.elapsed())
+                .unwrap_or_else(|| Duration::from_secs(0));
+            if event::poll(timeout).unwrap() {
+                let new_event: Result<CEvent, crossterm::ErrorKind> = event::read();
+                match new_event {
+                    Ok(event) => {let _ = tx.send(Event::Input(event)); }
+                    _ => { }
+                }
+                /*
+                if new_event.unwrap() {
+                    tx.send(new_event).unwrap();
+                }
+                */
+            }
+            if last_tick.elapsed() >= tick_rate {
+                tx.send(Event::Tick).unwrap();
+                last_tick = Instant::now();
+            }
+        }
+    });
+
     loop {
         let _draw = terminal.draw(|f| draw(f, &model));
         update(&rx, &mut model);
