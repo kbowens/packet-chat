@@ -57,6 +57,7 @@ fn main() -> anyhow::Result<()> {
         should_quit: false,
     };
 
+    //initialize getevent loop
     let tick_rate = Duration::from_millis(cli.tick_rate);
     thread::spawn(move || {
         let mut last_tick = Instant::now();
@@ -70,11 +71,6 @@ fn main() -> anyhow::Result<()> {
                     Ok(event) => {let _ = tx.send(Event::Input(event)); }
                     _ => { }
                 }
-                /*
-                if new_event.unwrap() {
-                    tx.send(new_event).unwrap();
-                }
-                */
             }
             if last_tick.elapsed() >= tick_rate {
                 tx.send(Event::Tick).unwrap();
@@ -83,6 +79,7 @@ fn main() -> anyhow::Result<()> {
         }
     });
 
+    //The main application loop
     loop {
         let _draw = terminal.draw(|f| draw(f, &model));
         update(&rx, &mut model);
