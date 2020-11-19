@@ -14,15 +14,17 @@ use crossterm::{
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
+use pcap::{Device, Capture, Packet};
 
 mod draw;
 mod model;
 use draw::draw;
 use model::Model;
 
-enum Event<I> {
+enum Event<I, P> {
     Input(I),
     Tick,
+    Packet(P),
 }
 
 /// CLI input
@@ -45,16 +47,20 @@ fn main() -> anyhow::Result<()> {
 	enable_raw_mode()?;
     //message producer and consumer
     let (tx, rx) = mpsc::channel();
+    let packet_sender = tx.clone();
 
+    //create context for new crossterm window
     let mut stdout = stdout();
     execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
-
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
+
+    //initalize model from the Cli struct
     let mut model = model::Model {
         input: "".to_string(), 
         currentWindow: 0,
         should_quit: false,
+        packets: vec![], 
     };
 
     //initialize getevent loop
@@ -79,6 +85,22 @@ fn main() -> anyhow::Result<()> {
         }
     });
 
+    //start capturing traffic
+    let main_device = Device::lookup().unwrap();
+    let mut cap = Capture::from_device(main_device).unwrap()
+                      .promisc(true)
+                      .timeout(20)
+                      .open().unwrap();
+    thread::spawn(move || {
+        loop {
+            if let Ok(packet) = cap.next() {
+                //lock mutex
+                let p = packet;
+                packet_sender.send(Event::Packet(p));
+            }
+        }
+    });
+
     //The main application loop
     loop {
         let _draw = terminal.draw(|f| draw(f, &model));
@@ -99,7 +121,7 @@ fn main() -> anyhow::Result<()> {
 
 
 
-fn update(rx: &mpsc::Receiver<Event<CEvent>>, model: &mut Model) -> anyhow::Result<()> {
+fn update(rx: &mpsc::Receiver<Event<CEvent, Packet>>, model: &mut Model) -> anyhow::Result<()> {
     match rx.recv()? {
         Event::Input(event) => match event {
             CEvent::Key(kevent) => {
@@ -113,6 +135,9 @@ fn update(rx: &mpsc::Receiver<Event<CEvent>>, model: &mut Model) -> anyhow::Resu
             }
         },
         Event::Tick => {
+
+        }, 
+        Event::Packet(packet) => {
 
         }
     }

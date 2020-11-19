@@ -11,3 +11,4 @@ crossterm = "0.17"
 tui = { version = "0.12", default-features = false, features = ['crossterm'] }
 argh = "0.1.0"
 anyhow = "1.0.34"
+pcap = "0.7.0"
