@@ -19,12 +19,12 @@ use pcap::{Device, Capture, Packet};
 mod draw;
 mod model;
 use draw::draw;
-use model::Model;
+use model::{Model};
 
 enum Event<I, P> {
     Input(I),
     Tick,
-    Packet(P),
+    Traffic(P),
 }
 
 /// CLI input
@@ -87,14 +87,30 @@ fn main() -> anyhow::Result<()> {
 
     //start capturing traffic
     let main_device = Device::lookup().unwrap();
-    
-    thread::spawn(move || {
-        let mut cap = Capture::from_device(main_device).unwrap()
+    let mut cap = Capture::from_device(main_device).unwrap()
                       .promisc(true)
                       .timeout(20)
                       .open().unwrap();
-        while let Ok(packet) = cap.next() {
-            packet_sender.send(Event::Packet(Box::new(packet)));
+
+    thread::spawn(move || {
+        loop {
+            while let Ok(packet) = cap.next() {
+                let mut s: &[u8] = &[];
+                let newdata = packet.data.to_vec();
+
+
+                /*
+                let newpacket = Box::new(model::Packet {
+                    header: model::PacketHeader {
+                        ts: packet.header.ts.clone(),
+                        caplen: packet.header.caplen.clone(),
+                        len: packet.header.len.clone(),
+                    },
+                    data: packet.data.clone(),
+                });
+                packet_sender.send(Event::Traffic(newpacket));
+                */
+            }
         }
     });
 
@@ -118,7 +134,7 @@ fn main() -> anyhow::Result<()> {
 
 
 
-fn update(rx: &mpsc::Receiver<Event<CEvent, Box<Packet>>>, model: &mut Model) -> anyhow::Result<()> {
+fn update(rx: &mpsc::Receiver<Event<CEvent, Box<model::Packet>>>, model: &mut Model) -> anyhow::Result<()> {
     match rx.recv()? {
         Event::Input(event) => match event {
             CEvent::Key(kevent) => {
@@ -134,7 +150,7 @@ fn update(rx: &mpsc::Receiver<Event<CEvent, Box<Packet>>>, model: &mut Model) ->
         Event::Tick => {
 
         }, 
-        Event::Packet(packet) => {
+        Event::Traffic(packet) => {
 
         }
     }

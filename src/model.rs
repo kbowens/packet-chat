@@ -5,11 +5,12 @@ pub struct Model {
     pub input: String,
     pub currentWindow: i8,
     pub should_quit: bool,
+    pub packets: Vec<Packet>
 }
 
 pub struct Packet {
     pub header: PacketHeader,
-    pub data: [u8],
+    pub data: Vec<u8>,
 }
 
 pub struct PacketHeader {
