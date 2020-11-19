@@ -18,16 +18,11 @@ use pcap::{Device, Capture, Packet};
 
 mod draw;
 mod model;
+mod update;
 use draw::draw;
-use model::{Model};
+use update::{update, Event};
 
-enum Event<I, P> {
-    Input(I),
-    Tick,
-    Traffic(P),
-}
-
-/// CLI input
+/// Program options
 #[derive(FromArgs)]
 struct Cli {
     /// time in ms between two ticks.
@@ -61,6 +56,7 @@ fn main() -> anyhow::Result<()> {
         currentWindow: 0,
         should_quit: false,
         packets: vec![], 
+        key_mode: model::KeyMode::Normal,
     };
 
     //initialize getevent loop
@@ -91,7 +87,6 @@ fn main() -> anyhow::Result<()> {
                       .promisc(true)
                       .timeout(20)
                       .open().unwrap();
-
     thread::spawn(move || {
         loop {
             while let Ok(packet) = cap.next() {
@@ -106,18 +101,6 @@ fn main() -> anyhow::Result<()> {
                     data: newdata,
                 });
                 packet_sender.send(Event::Traffic(newpacket));
-
-                /*
-                let newpacket = Box::new(model::Packet {
-                    header: model::PacketHeader {
-                        ts: packet.header.ts.clone(),
-                        caplen: packet.header.caplen.clone(),
-                        len: packet.header.len.clone(),
-                    },
-                    data: packet.data.clone(),
-                });
-                packet_sender.send(Event::Traffic(newpacket));
-                */
             }
         }
     });
@@ -142,26 +125,3 @@ fn main() -> anyhow::Result<()> {
 
 
 
-fn update(rx: &mpsc::Receiver<Event<CEvent, Box<model::Packet>>>, model: &mut Model) -> anyhow::Result<()> {
-    match rx.recv()? {
-        Event::Input(event) => match event {
-            CEvent::Key(kevent) => {
-                model.should_quit = true;
-            }, 
-            CEvent::Mouse(mevent) => {
-
-            },
-            CEvent::Resize(rh, rw) => {
-
-            }
-        },
-        Event::Tick => {
-
-        }, 
-        Event::Traffic(packet) => {
-
-        }
-    }
-
-    Ok(())
-}
