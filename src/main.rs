@@ -87,17 +87,14 @@ fn main() -> anyhow::Result<()> {
 
     //start capturing traffic
     let main_device = Device::lookup().unwrap();
-    let mut cap = Capture::from_device(main_device).unwrap()
+    
+    thread::spawn(move || {
+        let mut cap = Capture::from_device(main_device).unwrap()
                       .promisc(true)
                       .timeout(20)
                       .open().unwrap();
-    thread::spawn(move || {
-        loop {
-            if let Ok(packet) = cap.next() {
-                //lock mutex
-                let p = packet;
-                packet_sender.send(Event::Packet(p));
-            }
+        while let Ok(packet) = cap.next() {
+            packet_sender.send(Event::Packet(Box::new(packet)));
         }
     });
 
@@ -121,7 +118,7 @@ fn main() -> anyhow::Result<()> {
 
 
 
-fn update(rx: &mpsc::Receiver<Event<CEvent, Packet>>, model: &mut Model) -> anyhow::Result<()> {
+fn update(rx: &mpsc::Receiver<Event<CEvent, Box<Packet>>>, model: &mut Model) -> anyhow::Result<()> {
     match rx.recv()? {
         Event::Input(event) => match event {
             CEvent::Key(kevent) => {
