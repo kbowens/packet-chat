@@ -86,7 +86,7 @@ fn main() -> anyhow::Result<()> {
     });
 
     //start capturing traffic
-    let main_device = Device::lookup().unwrap();
+    let main_device = Device::lookup()?;
     let mut cap = Capture::from_device(main_device).unwrap()
                       .promisc(true)
                       .timeout(20)
@@ -95,9 +95,17 @@ fn main() -> anyhow::Result<()> {
     thread::spawn(move || {
         loop {
             while let Ok(packet) = cap.next() {
-                let mut s: &[u8] = &[];
                 let newdata = packet.data.to_vec();
-
+                let newheader = model::PacketHeader {
+                    ts: packet.header.ts,
+                    caplen: packet.header.caplen,
+                    len: packet.header.len,
+                };
+                let newpacket = Box::new(model::Packet {
+                    header: newheader,
+                    data: newdata,
+                });
+                packet_sender.send(Event::Traffic(newpacket));
 
                 /*
                 let newpacket = Box::new(model::Packet {

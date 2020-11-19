@@ -1,4 +1,11 @@
-# Regarding ASU Honors Contracts
+# Packet-Chat: Real time traffic analysis
+
+### Build information:
+
+To build on windows, you will need to have WinPcap installed and the WinPcap dev kit Lib folder on your system LIB environment variable.
+
+
+## Regarding ASU Honors Contracts
 
 Jed and I have decided to provide Honors Contracts projects for CSE 365. However, due to the sheer number of students in this class, we (or the TAs) will not be able to provide support on *any* questions or problems related to Honors Contract projects. If you want to pursue an Honors Contract as part of CSE 365, you must choose one of the following projects:
 
