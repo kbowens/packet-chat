@@ -1,20 +1,21 @@
-use std::string::String;
 use std::{
     //error::Error,
     io::{stdout, Write},
-    sync::mpsc,
+    sync::{mpsc, Arc, Mutex},
     thread,
     time::{Duration, Instant},
+    path::Path,
 };
 use tui::Terminal;
+use tui::widgets::TableState;
 use tui::backend::{CrosstermBackend};
 use argh::FromArgs;
 use crossterm::{
-    event::{self, DisableMouseCapture, EnableMouseCapture, Event as CEvent, KeyCode},
+    event::{self, DisableMouseCapture, EnableMouseCapture, Event as CEvent},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use pcap::{Device, Capture, Packet};
+use pcap::{Device, Capture};
 
 mod draw;
 mod model;
@@ -28,6 +29,10 @@ struct Cli {
     /// time in ms between two ticks.
     #[argh(option, default = "250")]
     tick_rate: u64,
+
+    /// read in a pcap file, or capture live
+    #[argh(option, default = "String::from(\"\")", short = 'f')]
+    filename: String,
 
     /// whether unicode symbols are used to improve the overall look of the app
     #[argh(option, default = "true")]
@@ -53,13 +58,16 @@ fn main() -> anyhow::Result<()> {
     //initalize model from the Cli struct
     let mut model = model::Model {
         input: "".to_string(), 
-        currentWindow: 0,
+        current_window: 0,
         should_quit: false,
-        packets: vec![], 
+        packets: Arc::new(Mutex::new(vec![])), 
+        packets_to_draw: vec![],
+        search_is_active: false,
         key_mode: model::KeyMode::Normal,
+        packet_table_state: TableState::default(),
     };
 
-    //initialize getevent loop
+    //initialize loop for sending program inputs
     let tick_rate = Duration::from_millis(cli.tick_rate);
     thread::spawn(move || {
         let mut last_tick = Instant::now();
@@ -83,12 +91,32 @@ fn main() -> anyhow::Result<()> {
 
     //start capturing traffic
     let main_device = Device::lookup()?;
-    let mut cap = Capture::from_device(main_device).unwrap()
-                      .promisc(true)
-                      .timeout(20)
-                      .open().unwrap();
-    thread::spawn(move || {
-        loop {
+    if cli.filename.is_empty() {
+        let mut cap = Capture::from_device(main_device).unwrap()
+                          .promisc(true)
+                          .timeout(20)
+                          .open().unwrap();
+        thread::spawn(move || {
+            loop {
+                while let Ok(packet) = cap.next() {
+                    let newdata = packet.data.to_vec();
+                    let newheader = model::PacketHeader {
+                        ts: packet.header.ts,
+                        caplen: packet.header.caplen,
+                        len: packet.header.len,
+                    };
+                    let newpacket = Box::new(model::Packet {
+                        header: newheader,
+                        info: model::PacketInfo::from(newdata),
+                    });
+                    let _send_packet = packet_sender.send(Event::Traffic(newpacket));
+                }
+            }
+        });
+    } else {
+        let capture_path = Path::new(&*cli.filename);
+        let mut cap = Capture::from_file(capture_path).expect("Failed to find file");
+        thread::spawn(move || {
             while let Ok(packet) = cap.next() {
                 let newdata = packet.data.to_vec();
                 let newheader = model::PacketHeader {
@@ -98,17 +126,20 @@ fn main() -> anyhow::Result<()> {
                 };
                 let newpacket = Box::new(model::Packet {
                     header: newheader,
-                    data: newdata,
+                    info: model::PacketInfo::from(newdata),
                 });
-                packet_sender.send(Event::Traffic(newpacket));
-            }
-        }
-    });
+                let _send_packet = packet_sender.send(Event::Traffic(newpacket));
+                thread::sleep(Duration::from_millis(10));
+            };
+        });
+        
+        
+    }
 
     //The main application loop
     loop {
-        let _draw = terminal.draw(|f| draw(f, &model));
-        update(&rx, &mut model);
+        let _update_the_model = update(&rx, &mut model);
+        let _draw_the_window = terminal.draw(|f| draw(f, &mut model));
         if model.should_quit {
             disable_raw_mode()?;
             execute!(
@@ -122,6 +153,3 @@ fn main() -> anyhow::Result<()> {
 
     Ok(())
 }
-
-
-

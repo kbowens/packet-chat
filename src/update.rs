@@ -21,7 +21,10 @@ pub fn update(rx: &mpsc::Receiver<Event<CEvent, Box<Packet>>>, model: &mut Model
                         },
                         KeyCode::Esc => {
                             model.key_mode = KeyMode::Normal;
-                        }
+                        },
+                        KeyCode::Backspace => {
+                            model.input.pop();
+                        },
                         _ => {
 
                         }
@@ -34,7 +37,37 @@ pub fn update(rx: &mpsc::Receiver<Event<CEvent, Box<Packet>>>, model: &mut Model
                         },
                         KeyCode::Char('i') => {
                             model.key_mode = KeyMode::Insert;
-                        }
+                        },
+                        KeyCode::Char('j') => {
+                            let i = match model.packet_table_state.selected() {
+                                Some(i) => {
+                                    let localpacketlist = model.packets.clone();
+                                    let lplocked = localpacketlist.lock().unwrap();
+                                    if i == lplocked.len() {
+                                        model.packet_table_state.select(Some(i));
+                                    }else {
+                                        model.packet_table_state.select(Some(i+1));
+                                    }
+                                },
+                                None => {
+                                    model.packet_table_state.select(Some(0));
+                                }
+                            };
+                        },
+                        KeyCode::Char('k') => {
+                            let i = match model.packet_table_state.selected() {
+                                Some(i) => {
+                                    if i == 0 {
+                                        model.packet_table_state.select(Some(0));
+                                    } else {
+                                         model.packet_table_state.select(Some(i-1));
+                                    }
+                                },
+                                None => {
+                                    model.packet_table_state.select(Some(0));
+                                }
+                            };
+                        },
                         _ => {
 
                         }
@@ -53,7 +86,9 @@ pub fn update(rx: &mpsc::Receiver<Event<CEvent, Box<Packet>>>, model: &mut Model
 
         }, 
         Event::Traffic(packet) => {
-            model.packets.push(*packet);
+            let localpacketlist = model.packets.clone();
+            let mut unlocked = localpacketlist.lock().unwrap();
+            unlocked.push(*packet);
         }
     }
 
