@@ -1,8 +1,11 @@
 use std::sync::mpsc;
+use std::thread;
+use std::sync::{Arc, Mutex};
 use crossterm::{
     event::{Event as CEvent, KeyCode},
 };
 use crate::model::{Model, KeyMode, Packet};
+use crate::search::search;
 
 pub enum Event<I, P> {
     Input(I),
@@ -10,7 +13,8 @@ pub enum Event<I, P> {
     Traffic(P),
 }
 
-pub fn update(rx: &mpsc::Receiver<Event<CEvent, Box<Packet>>>, model: &mut Model) -> anyhow::Result<()> {
+pub fn update(rx: &mpsc::Receiver<Event<CEvent, Box<Packet>>>, guarded_model: Arc<Mutex<Model>>) -> anyhow::Result<()> {
+    let mut model = guarded_model.lock().unwrap();
     match rx.recv()? {
         Event::Input(event) => match event {
             CEvent::Key(kevent) => {
@@ -25,10 +29,13 @@ pub fn update(rx: &mpsc::Receiver<Event<CEvent, Box<Packet>>>, model: &mut Model
                         KeyCode::Backspace => {
                             model.input.pop();
                         },
+                        KeyCode::Enter => {
+                            
+                        },
                         _ => {
 
                         }
-                    }
+                    };
                 }
                 if model.key_mode == KeyMode::Normal {
                     match kevent.code {

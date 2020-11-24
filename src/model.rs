@@ -3,22 +3,27 @@ use libc::timeval;
 use std::sync::{Arc, Mutex};
 use tui::widgets::TableState;
 use anyhow;
+use serde::{Serialize, Deserialize};
+use chrono::naive::NaiveDateTime;
 
 pub struct Model {
     pub input: String,
     pub current_window: i8,
     pub should_quit: bool,
     pub packets: Arc<Mutex<Vec<Packet>>>,
-    packets_to_draw: Vec<Packet>,
+    pub packets_to_draw: Arc<Mutex<Vec<Packet>>>,
     pub search_is_active: bool,
     pub key_mode: KeyMode,
     pub packet_table_state: TableState,
+    pub gauge_ratio: Arc<Mutex<usize>>,
 }
 
 impl Model {
     pub fn get_packets_to_draw(&self) -> Option<Vec<Packet>> {
     	if self.search_is_active {
-    		return Some(self.packets_to_draw);
+    		let arc_ptd = self.packets_to_draw.clone();
+    		let access_ptd = arc_ptd.lock().unwrap();
+    		return Some(access_ptd.clone());
     	} else {
 	    	let localpacketslist = self.packets.clone();
 	    	let pllocked = localpacketslist.lock().unwrap();
@@ -31,35 +36,22 @@ impl Model {
 	    }
     }
 
-    pub fn find_keyword(&self, keyword: &str) -> anyhow::Result<()> {
-    	let localpacketlist = self.packets.clone();
-    	let guard = localpacketlist.lock();
-    	let pllocked = guard.unwrap();
-    	let len = pllocked.len();
-    	std::mem::drop(pllocked);
-    	for packet_index in 0..len {
-    		let pllocked = localpacketlist.lock().unwrap();
-    		let packet_data = pllocked[packet_index].info.data[..].to_vec();
-    		let strdata = String::from_utf8(packet_data).unwrap();
-    		let s = strdata.find(keyword);
-    		match s {
-    			Some(index) => {
 
-    			},
-    			None => {
 
-    			}
-    		}
-    	}
-    	Ok(())
+    pub fn get_gauge_ratio(&self) -> u16 {
+    	let gr_arc = self.gauge_ratio.clone();
+    	let gr_lock = gr_arc.lock().unwrap();
+    	return *gr_lock as u16;
     }
 
 }
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize, Debug, pallet::DocumentLike)]
 pub struct Packet {
+	#[pallet(skip_indexing)]
     pub header: PacketHeader,
-    pub info: PacketInfo,
+    #[pallet(default_search_field)]
+    pub info: String,
 }
 
 #[derive(Clone)]
@@ -84,11 +76,54 @@ impl From<Vec<u8>> for PacketInfo {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct PacketHeader {
-    pub ts: timeval,
+	#[serde(with = "date_format")]
+    pub ts: NaiveDateTime,
     pub caplen: u32,
     pub len: u32,
+}
+
+mod date_format {
+    use chrono::naive::{NaiveDateTime};
+    use serde::{self, Deserialize, Serializer, Deserializer};
+
+    const FORMAT: &'static str = "%Y-%m-%d %H:%M:%S";
+
+    // The signature of a serialize_with function must follow the pattern:
+    //
+    //    fn serialize<S>(&T, S) -> Result<S::Ok, S::Error>
+    //    where
+    //        S: Serializer
+    //
+    // although it may also be generic over the input types T.
+    pub fn serialize<S>(
+        date: &NaiveDateTime,
+        serializer: S,
+    ) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let s = format!("{}", date.format(FORMAT));
+        serializer.serialize_str(&s)
+    }
+
+    // The signature of a deserialize_with function must follow the pattern:
+    //
+    //    fn deserialize<'de, D>(D) -> Result<T, D::Error>
+    //    where
+    //        D: Deserializer<'de>
+    //
+    // although it may also be generic over the output types T.
+    pub fn deserialize<'de, D>(
+        deserializer: D,
+    ) -> Result<NaiveDateTime, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        NaiveDateTime::parse_from_str(&s, FORMAT).map_err(serde::de::Error::custom)
+    }
 }
 
 #[derive(PartialEq)]
@@ -96,8 +131,3 @@ pub enum KeyMode {
 	Insert,
 	Normal,
 }
-
-
-/* Tomorrow, need to clone the pieces of a Packet into my own packet struct
-	and then I will be able to place that into a vector that can be sorted through
-*/	
