@@ -18,11 +18,17 @@ use crossterm::{
 use pcap::{Device, Capture};
 use stfu8;
 use chrono::naive::NaiveDateTime;
+use pallet;
+
 
 mod draw;
 mod model;
 mod update;
 mod search;
+mod packetthread;
+mod dbthread;
+use packetthread::handle_packets;
+use dbthread::handle_db;
 use draw::draw;
 use update::{update, Event};
 
@@ -49,8 +55,8 @@ fn main() -> anyhow::Result<()> {
 	let cli: Cli = argh::from_env();
 	enable_raw_mode()?;
     //message producer and consumer
-    let (tx, rx) = mpsc::channel();
-    let packet_sender = tx.clone();
+    let (update_tx, update_rx) = mpsc::channel();
+    let (packet_sender, packet_receiver) = mpsc::channel();
 
     //create context for new crossterm window
     let mut stdout = stdout();
@@ -69,10 +75,20 @@ fn main() -> anyhow::Result<()> {
         key_mode: model::KeyMode::Normal,
         packet_table_state: TableState::default(),
         gauge_ratio: Arc::new(Mutex::new(0)),
+        new_packets: Arc::new(Mutex::new(vec![])),
     }));
+
+    //Create Pallet Database
+    let temp_dir = tempfile::TempDir::new_in(".")?;
+    let db = pallet::ext::sled::open(temp_dir.path().join("db"))?;
+    let packetstore: pallet::Store<model::Packet> = pallet::Store::builder()
+        .with_db(db)
+        .with_index_dir(temp_dir.path())
+        .finish()?;
 
     //initialize loop for sending program inputs
     let tick_rate = Duration::from_millis(cli.tick_rate);
+    let tupdate_tx = update_tx.clone();
     thread::spawn(move || {
         let mut last_tick = Instant::now();
         loop {
@@ -82,12 +98,12 @@ fn main() -> anyhow::Result<()> {
             if event::poll(timeout).unwrap() {
                 let new_event: Result<CEvent, crossterm::ErrorKind> = event::read();
                 match new_event {
-                    Ok(event) => {let _ = tx.send(Event::Input(event)); }
+                    Ok(event) => {let _ = tupdate_tx.send(Event::Input(event)); }
                     _ => { }
                 }
             }
             if last_tick.elapsed() >= tick_rate {
-                tx.send(Event::Tick).unwrap();
+                tupdate_tx.send(Event::Tick).unwrap();
                 last_tick = Instant::now();
             }
         }
@@ -113,7 +129,7 @@ fn main() -> anyhow::Result<()> {
                         header: newheader,
                         info: stfu8::encode_u8(newdata),
                     });
-                    let _send_packet = packet_sender.send(Event::Traffic(newpacket));
+                    let _send_packet = packet_sender.send(newpacket);
                 }
             }
         });
@@ -132,17 +148,26 @@ fn main() -> anyhow::Result<()> {
                     header: newheader,
                     info: stfu8::encode_u8(newdata),
                 });
-                let _send_packet = packet_sender.send(Event::Traffic(newpacket));
+                let _send_packet = packet_sender.send(newpacket);
                 thread::sleep(Duration::from_millis(10));
             };
         });
         
-        
     }
+
+    //create the thread to handle packets and db
+    let pthreadmodel = model.clone();
+    let pthreadupdate = update_tx.clone();
+    let pmodel = model.clone();
+    let packets_list_for_threads: Arc<Mutex<Vec<model::Packet>>> = Arc::new(Mutex::new(vec![]));
+    let ptpacketlist = packets_list_for_threads.clone();
+    let dbpacketlist = packets_list_for_threads.clone();
+    thread::spawn(move || handle_packets(&packet_receiver, &pthreadupdate, pthreadmodel, ptpacketlist));
+    thread::spawn(move || handle_db(pmodel, packets_list_for_threads));
 
     //The main application loop
     loop {
-        let _update_the_model = update(&rx, model.clone());
+        let _update_the_model = update(&update_rx, model.clone());
         let _draw_the_window = terminal.draw(|f| draw(f, model.clone()));
         if model.lock().unwrap().should_quit {
             disable_raw_mode()?;
@@ -151,9 +176,11 @@ fn main() -> anyhow::Result<()> {
                 LeaveAlternateScreen,
                 DisableMouseCapture
                 )?;
+            temp_dir.close()?;
             break;
         }
     }
+
 
     Ok(())
 }

@@ -6,6 +6,9 @@ use crossterm::{
 };
 use crate::model::{Model, KeyMode, Packet};
 use crate::search::search;
+use pallet;
+
+use crate::model;
 
 pub enum Event<I, P> {
     Input(I),
@@ -30,7 +33,10 @@ pub fn update(rx: &mpsc::Receiver<Event<CEvent, Box<Packet>>>, guarded_model: Ar
                             model.input.pop();
                         },
                         KeyCode::Enter => {
-                            
+                            if !model.input.is_empty() {
+                                model.search_is_active = true;
+                                model.key_mode = KeyMode::Normal;
+                            }
                         },
                         _ => {
 
@@ -75,6 +81,10 @@ pub fn update(rx: &mpsc::Receiver<Event<CEvent, Box<Packet>>>, guarded_model: Ar
                                 }
                             };
                         },
+                        KeyCode::Char('c') => {
+                            model.input.clear();
+                            model.search_is_active = false;
+                        }
                         _ => {
 
                         }

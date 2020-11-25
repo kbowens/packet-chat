@@ -46,10 +46,10 @@ pub fn draw<B: Backend>(f: &mut Frame<B>, model: Arc<Mutex<model::Model>>) {
     // Create the Table showing packets as they are added
 	let row_style = Style::default().fg(Color::White);
 	let headers = vec!["Time", "Length"].into_iter();
-    if let Some(packets_to_draw) = model.get_packets_to_draw(){
-    	let rows = packets_to_draw.iter().map(|p| {
-    		Row::StyledData(vec![p.header.ts.format("%Y-%m-%d %H:%M:%S").to_string(), p.header.len.to_string()].into_iter(), row_style)
-    	});
+    if let Some(packets_to_draw) = model.get_packets_to_draw() {
+        let rows = packets_to_draw.iter().map(|p| {
+            Row::StyledData(vec![p.header.ts.format("%H:%M:%S").to_string(), p.header.len.to_string()].into_iter(), row_style)
+        });
         let packet_view = Table::new(headers, rows)
             .block(Block::default().title("Packets").borders(Borders::ALL).border_style(Style::default().fg(Color::Cyan)))
     	    .header_style(Style::default().fg(Color::Yellow))
@@ -60,7 +60,6 @@ pub fn draw<B: Backend>(f: &mut Frame<B>, model: Arc<Mutex<model::Model>>) {
     	    .column_spacing(1);
         f.render_stateful_widget(packet_view, topsection[0], &mut model.packet_table_state);
     }
-
     //Table showing conversations
     let blocks = Block::default()
         .title("infosechonors")

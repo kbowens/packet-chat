@@ -16,6 +16,7 @@ pub struct Model {
     pub key_mode: KeyMode,
     pub packet_table_state: TableState,
     pub gauge_ratio: Arc<Mutex<usize>>,
+    pub new_packets: Arc<Mutex<Vec<Packet>>>,
 }
 
 impl Model {
@@ -47,6 +48,7 @@ impl Model {
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug, pallet::DocumentLike)]
+#[pallet(tree_name = "Packets")]
 pub struct Packet {
 	#[pallet(skip_indexing)]
     pub header: PacketHeader,
