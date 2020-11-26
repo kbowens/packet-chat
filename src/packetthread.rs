@@ -2,13 +2,12 @@ use std::thread;
 use std::sync::{mpsc, Arc, Mutex};
 use std::time::Duration;
 use crossterm::event::Event as CEvent;
-use crate::model::{Model, Packet};
+use crate::model::{Packet};
 use crate::update::Event;
 
 pub fn handle_packets(packet_receiver: &mpsc::Receiver<Box<Packet>>,
 		update_tx: &mpsc::Sender<Event<CEvent,
-		Box<Packet>>>,  
-		model: Arc<Mutex<Model>>,
+		Box<Packet>>>, 
 		pthread_packet_list: Arc<Mutex<Vec<Packet>>>) {
 
 	loop {

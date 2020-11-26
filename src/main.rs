@@ -16,7 +16,6 @@ use crossterm::{
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use pcap::{Device, Capture};
-use pallet;
 
 mod draw;
 mod model;
@@ -119,13 +118,11 @@ fn main() -> anyhow::Result<()> {
     }
 
     //create the thread to handle packets and db
-    let pthreadmodel = model.clone();
     let pthreadupdate = update_tx.clone();
     let pmodel = model.clone();
     let packets_list_for_threads: Arc<Mutex<Vec<model::Packet>>> = Arc::new(Mutex::new(vec![]));
     let ptpacketlist = packets_list_for_threads.clone();
-    let dbpacketlist = packets_list_for_threads.clone();
-    thread::spawn(move || handle_packets(&packet_receiver, &pthreadupdate, pthreadmodel, ptpacketlist));
+    thread::spawn(move || handle_packets(&packet_receiver, &pthreadupdate, ptpacketlist));
     thread::spawn(move || handle_db(pmodel, packets_list_for_threads));
 
     //The main application loop

@@ -7,6 +7,7 @@ pub fn handle_db(model: Arc<Mutex<Model>>, packets_to_insert: Arc<Mutex<Vec<Pack
 	//the shared vector here could really be a channel instead, might be more efficient.
 
 	//Create Pallet Database
+	//TODO: where to delete this temp dir?
     let temp_dir = tempfile::TempDir::new_in(".").unwrap();
     let db = pallet::ext::sled::open(temp_dir.path().join("db")).unwrap();
     let packetstore: pallet::Store<Packet> = pallet::Store::builder()
@@ -32,7 +33,7 @@ pub fn handle_db(model: Arc<Mutex<Model>>, packets_to_insert: Arc<Mutex<Vec<Pack
 			std::mem::drop(modellock);
 			let result = packetstore.search(query.as_str()).unwrap();
 			match result {
-				pallet::search::Results { count, hits } => {
+				pallet::search::Results { count, hits: _ } => {
 					let mut result_packets: Vec<Packet> = vec![];
 					for id in 0..count {
 						let found: Option<pallet::Document<Packet>> = packetstore.find(id as u64).unwrap();
@@ -50,7 +51,5 @@ pub fn handle_db(model: Arc<Mutex<Model>>, packets_to_insert: Arc<Mutex<Vec<Pack
 				},
 			}
 		}
-		
-
 	}
 }
