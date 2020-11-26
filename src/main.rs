@@ -59,7 +59,7 @@ fn main() -> anyhow::Result<()> {
     let mut terminal = Terminal::new(backend)?;
 
     //initalize model from the Cli struct
-    let mut model = Arc::new(Mutex::new(model::Model {
+    let model = Arc::new(Mutex::new(model::Model {
         input: "".to_string(), 
         current_window: 0,
         should_quit: false,
@@ -72,14 +72,6 @@ fn main() -> anyhow::Result<()> {
         new_packets: Arc::new(Mutex::new(vec![])),
         selected_packet: None,
     }));
-
-    //Create Pallet Database
-    let temp_dir = tempfile::TempDir::new_in(".")?;
-    let db = pallet::ext::sled::open(temp_dir.path().join("db"))?;
-    let packetstore: pallet::Store<model::Packet> = pallet::Store::builder()
-        .with_db(db)
-        .with_index_dir(temp_dir.path())
-        .finish()?;
 
     //initialize loop for sending program inputs
     let tick_rate = Duration::from_millis(cli.tick_rate);
@@ -147,7 +139,6 @@ fn main() -> anyhow::Result<()> {
                 LeaveAlternateScreen,
                 DisableMouseCapture
                 )?;
-            temp_dir.close()?;
             break;
         }
     }
