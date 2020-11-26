@@ -1,17 +1,15 @@
 use std::sync::{Arc, Mutex};
 
 use tui::backend::{Backend};
-use tui::widgets::{Block, Borders, Paragraph, Wrap, Row, Table, Gauge, List, ListItem};
+use tui::widgets::{Block, Borders, Paragraph, Wrap, Row, Table, List, ListItem};
 use tui::layout::{Layout, Constraint, Direction, Alignment};
-use tui::style::{Style, Color, Modifier};
+use tui::style::{Style, Color};
 use tui::text::{Text};
 use tui::Frame;
 use std::string::String;
 use crate::model;
 
 pub fn draw<B: Backend>(f: &mut Frame<B>, model: Arc<Mutex<model::Model>>) {
-    //Useful constants for styling sections
-    let selected_area_style = Style::default().fg(Color::Cyan);
     let mut model = model.lock().unwrap();
 
     //Split the terminal into sections

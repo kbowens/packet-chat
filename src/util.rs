@@ -1,17 +1,14 @@
 use std::sync::mpsc;
 use chrono::naive::NaiveDateTime;
 use pcap::{Capture, Activated};
-use eui48::MacAddress;
 use stfu8;
 use crate::model::{Packet, PacketHeader};
-use std::convert::TryInto;
 use etherparse::{IpHeader};
 
 
 pub fn process_packets<T: Activated>(cap: &mut Capture<T>, packet_sender: &mpsc::Sender<Box<Packet>>) {
 	while let Ok(packet) = cap.next() {
         let newdata = etherparse::PacketHeaders::from_ethernet_slice(&packet);
-       	let pclen = packet.header.caplen.clone();
         let newheader = PacketHeader {
             ts: NaiveDateTime::from_timestamp(packet.header.ts.tv_sec, packet.header.ts.tv_usec as u32),
             caplen: packet.header.caplen,
@@ -66,22 +63,6 @@ pub fn process_packets<T: Activated>(cap: &mut Capture<T>, packet_sender: &mpsc:
 
         	}
         }
-
-
-        /*
-        let newpacket = Box::new(Packet {
-            header: newheader,
-            mac_dst: if pclen >= 6 {Some(MacAddress::new((&newdata[0..6]).try_into().unwrap()).to_hex_string())}else{None},
-            mac_src: if pclen >= 12 {Some(MacAddress::new((&newdata[6..12]).try_into().unwrap()).to_hex_string())}else{None},
-            ip_type: if pclen >= 14 {match newdata[12..14] {
-            	[0x08,0x00] => Some("IPv4".to_string()),
-            	[0x86, 0xdd] => Some("IPv6".to_string()),
-            	_ => None,
-            }} else {None},
-            info: stfu8::encode_u8(newdata),
-        });
-        let _send_packet = packet_sender.send(newpacket);
-        */
     }
 }
 
