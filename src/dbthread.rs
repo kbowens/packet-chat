@@ -27,7 +27,7 @@ pub fn handle_db(model: Arc<Mutex<Model>>, packets_to_insert: Arc<Mutex<Vec<Pack
 		}
 		let mut modellock = model.lock().unwrap();
 		if modellock.search_is_active && !modellock.input.is_empty() {
-			let mut query = modellock.input.clone();
+			let query = modellock.input.clone();
 			modellock.input = "".to_string();
 			std::mem::drop(modellock);
 			let result = packetstore.search(query.as_str()).unwrap();
@@ -41,15 +41,12 @@ pub fn handle_db(model: Arc<Mutex<Model>>, packets_to_insert: Arc<Mutex<Vec<Pack
 						result_packets.push(found_packet);
 					}
 					let arc_model = model.clone();
-					let mut locked_model = arc_model.lock().unwrap();
+					let locked_model = arc_model.lock().unwrap();
 					let draw_search_results: Arc<Mutex<Vec<Packet>>> = locked_model.packets_to_draw.clone();
 					let mut locked_draw_search_results = draw_search_results.lock().unwrap();
 					locked_draw_search_results.clear();
 					locked_draw_search_results.append(&mut result_packets);//clears result_packets
 					//locked_model.input = "search complete".to_string();
-				},
-				_ => {
-
 				},
 			}
 		}
