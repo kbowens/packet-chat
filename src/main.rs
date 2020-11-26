@@ -16,15 +16,11 @@ use crossterm::{
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use pcap::{Device, Capture};
-use stfu8;
-use chrono::naive::NaiveDateTime;
 use pallet;
-
 
 mod draw;
 mod model;
 mod update;
-mod search;
 mod packetthread;
 mod dbthread;
 mod util;
@@ -44,10 +40,6 @@ struct Cli {
     /// read in a pcap file, or capture live
     #[argh(option, default = "String::from(\"\")", short = 'f')]
     filename: String,
-
-    /// whether unicode symbols are used to improve the overall look of the app
-    #[argh(option, default = "true")]
-    enhanced_graphics: bool,
 }
 
 
