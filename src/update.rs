@@ -1,14 +1,9 @@
 use std::sync::mpsc;
-use std::thread;
 use std::sync::{Arc, Mutex};
 use crossterm::{
     event::{Event as CEvent, KeyCode},
 };
 use crate::model::{Model, KeyMode, Packet};
-use crate::search::search;
-use pallet;
-
-use crate::model;
 
 pub enum Event<I, P> {
     Input(I),
@@ -71,10 +66,10 @@ pub fn update(rx: &mpsc::Receiver<Event<CEvent, Box<Packet>>>, guarded_model: Ar
                 }
                 
             }, 
-            CEvent::Mouse(mevent) => {
+            CEvent::Mouse(_mevent) => {
 
             },
-            CEvent::Resize(rh, rw) => {
+            CEvent::Resize(_rh, _rw) => {
 
             }
         },
