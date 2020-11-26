@@ -14,7 +14,7 @@ pub struct Model {
     pub packet_table_state: TableState,
     pub gauge_ratio: Arc<Mutex<usize>>,
     pub new_packets: Arc<Mutex<Vec<Packet>>>,
-    pub selected_packet: Option<Packet>, // Do I need this?
+    pub selected_packet: Option<Packet>, // Do I need this? Note: for now, but I shouldn't.
 }
 
 impl Model {
