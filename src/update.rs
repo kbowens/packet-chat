@@ -36,6 +36,7 @@ pub fn update(rx: &mpsc::Receiver<Event<CEvent, Box<Packet>>>, guarded_model: Ar
                             if !model.input.is_empty() {
                                 model.search_is_active = true;
                                 model.key_mode = KeyMode::Normal;
+                                model.packet_table_state.select(None);
                             }
                         },
                         _ => {
@@ -50,40 +51,18 @@ pub fn update(rx: &mpsc::Receiver<Event<CEvent, Box<Packet>>>, guarded_model: Ar
                         },
                         KeyCode::Char('i') => {
                             model.key_mode = KeyMode::Insert;
+                            model.packet_table_state.select(None);
                         },
                         KeyCode::Char('j') => {
-                            let i = match model.packet_table_state.selected() {
-                                Some(i) => {
-                                    let localpacketlist = model.packets.clone();
-                                    let lplocked = localpacketlist.lock().unwrap();
-                                    if i == lplocked.len() {
-                                        model.packet_table_state.select(Some(i));
-                                    }else {
-                                        model.packet_table_state.select(Some(i+1));
-                                    }
-                                },
-                                None => {
-                                    model.packet_table_state.select(Some(0));
-                                }
-                            };
+                            model.select_next_packet();
                         },
                         KeyCode::Char('k') => {
-                            let i = match model.packet_table_state.selected() {
-                                Some(i) => {
-                                    if i == 0 {
-                                        model.packet_table_state.select(Some(0));
-                                    } else {
-                                         model.packet_table_state.select(Some(i-1));
-                                    }
-                                },
-                                None => {
-                                    model.packet_table_state.select(Some(0));
-                                }
-                            };
+                            model.select_previous_packet();
                         },
                         KeyCode::Char('c') => {
                             model.input.clear();
                             model.search_is_active = false;
+                            model.packet_table_state.select(None);
                         }
                         _ => {
 

@@ -27,6 +27,8 @@ mod update;
 mod search;
 mod packetthread;
 mod dbthread;
+mod util;
+use util::{process_packets};
 use packetthread::handle_packets;
 use dbthread::handle_db;
 use draw::draw;
@@ -76,6 +78,7 @@ fn main() -> anyhow::Result<()> {
         packet_table_state: TableState::default(),
         gauge_ratio: Arc::new(Mutex::new(0)),
         new_packets: Arc::new(Mutex::new(vec![])),
+        selected_packet: None,
     }));
 
     //Create Pallet Database
@@ -118,39 +121,15 @@ fn main() -> anyhow::Result<()> {
                           .open().unwrap();
         thread::spawn(move || {
             loop {
-                while let Ok(packet) = cap.next() {
-                    let newdata = packet.data;
-                    let newheader = model::PacketHeader {
-                        ts: NaiveDateTime::from_timestamp(packet.header.ts.tv_sec, packet.header.ts.tv_usec as u32),
-                        caplen: packet.header.caplen,
-                        len: packet.header.len,
-                    };
-                    let newpacket = Box::new(model::Packet {
-                        header: newheader,
-                        info: stfu8::encode_u8(newdata),
-                    });
-                    let _send_packet = packet_sender.send(newpacket);
-                }
+                process_packets(&mut cap, &packet_sender);
             }
         });
     } else {
         let capture_path = Path::new(&*cli.filename);
         let mut cap = Capture::from_file(capture_path).expect("Failed to find file");
         thread::spawn(move || {
-            while let Ok(packet) = cap.next() {
-                let newdata = packet.data;
-                let newheader = model::PacketHeader {
-                    ts: NaiveDateTime::from_timestamp(packet.header.ts.tv_sec, packet.header.ts.tv_usec as u32),
-                    caplen: packet.header.caplen,
-                    len: packet.header.len,
-                };
-                let newpacket = Box::new(model::Packet {
-                    header: newheader,
-                    info: stfu8::encode_u8(newdata),
-                });
-                let _send_packet = packet_sender.send(newpacket);
+                process_packets(&mut cap, &packet_sender);
                 thread::sleep(Duration::from_millis(10));
-            };
         });
         
     }

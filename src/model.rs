@@ -5,6 +5,7 @@ use tui::widgets::TableState;
 use anyhow;
 use serde::{Serialize, Deserialize};
 use chrono::naive::NaiveDateTime;
+use pallet::ext::tantivy::schema::Facet;
 
 pub struct Model {
     pub input: String,
@@ -17,11 +18,12 @@ pub struct Model {
     pub packet_table_state: TableState,
     pub gauge_ratio: Arc<Mutex<usize>>,
     pub new_packets: Arc<Mutex<Vec<Packet>>>,
+    pub selected_packet: Option<Packet>, // Do I need this?
 }
 
 impl Model {
     pub fn get_packets_to_draw(&self) -> Option<Vec<Packet>> {
-    	if self.search_is_active {
+    	if self.search_is_active == true {
     		let arc_ptd = self.packets_to_draw.clone();
     		let access_ptd = arc_ptd.lock().unwrap();
     		return Some(access_ptd.clone());
@@ -35,6 +37,50 @@ impl Model {
 	            _ => return Some(pllocked[length - 20..length].to_vec()),
 	        }
 	    }
+    }
+
+    pub fn select_next_packet(&mut self) {
+        let packet_table_size = match self.search_is_active {
+            true => {
+                self.packets_to_draw.lock().unwrap().len()
+            },
+            false => {
+                //self.packets.lock().unwrap().len()
+                //Someday, it will be above. But I have the size capped at 20 rn
+                //and I need to figure out how to dynamically change the shown array.
+                20
+            }
+        };
+        if packet_table_size == 0 {
+            return
+        }
+        if self.packet_table_state.selected() == None {
+            self.packet_table_state.select(Some(0));
+        } else {
+            let selected_ind = self.packet_table_state.selected().unwrap();
+            if selected_ind < packet_table_size - 1 {
+                self.packet_table_state.select(Some(selected_ind+1));
+            }
+        }
+        
+    }
+
+    pub fn select_previous_packet(&mut self) {
+        let packet_table_size = match self.search_is_active {
+            true => self.packets_to_draw.lock().unwrap().len(),
+            false => self.packets.lock().unwrap().len()
+        };
+        if packet_table_size == 0 {
+            return
+        }
+        if self.packet_table_state.selected() == None {
+            self.packet_table_state.select(Some(0));
+        } else {
+            let selected_ind = self.packet_table_state.selected().unwrap();
+            if selected_ind > 0 {
+                self.packet_table_state.select(Some(selected_ind - 1));
+            }
+        }
     }
 
 
@@ -53,7 +99,17 @@ pub struct Packet {
 	#[pallet(skip_indexing)]
     pub header: PacketHeader,
     #[pallet(default_search_field)]
-    pub info: String,
+    pub mac_dst: Option<String>,
+    #[pallet(default_search_field)]
+    pub mac_src: Option<String>,
+    #[pallet(default_search_field)]
+    pub ip_type: Option<String>,
+    #[pallet(default_search_field)]
+    pub ip_dst: Option<String>,
+    #[pallet(default_search_field)]
+    pub ip_src: Option<String>,
+    #[pallet(default_search_field)]
+    pub payload: String,
 }
 
 #[derive(Clone)]
@@ -65,7 +121,7 @@ pub struct PacketInfo {
 
 
 }
-
+//Delete this maybe?
 impl From<Vec<u8>> for PacketInfo {
     fn from(mut newdata: Vec<u8>) -> Self {
         PacketInfo {
