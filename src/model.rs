@@ -1,11 +1,7 @@
-use std::thread;
-use libc::timeval;
 use std::sync::{Arc, Mutex};
 use tui::widgets::TableState;
-use anyhow;
 use serde::{Serialize, Deserialize};
 use chrono::naive::NaiveDateTime;
-use pallet::ext::tantivy::schema::Facet;
 
 pub struct Model {
     pub input: String,
@@ -82,15 +78,6 @@ impl Model {
             }
         }
     }
-
-
-
-    pub fn get_gauge_ratio(&self) -> u16 {
-    	let gr_arc = self.gauge_ratio.clone();
-    	let gr_lock = gr_arc.lock().unwrap();
-    	return *gr_lock as u16;
-    }
-
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug, pallet::DocumentLike)]
@@ -110,28 +97,6 @@ pub struct Packet {
     pub ip_src: Option<String>,
     #[pallet(default_search_field)]
     pub payload: String,
-}
-
-#[derive(Clone)]
-pub struct PacketInfo {
-    pub eth_dst: Vec<u8>,
-    pub eth_src: Vec<u8>,
-    pub eth_type: Vec<u8>,
-    pub data: Vec<u8>,
-
-
-}
-//Delete this maybe?
-impl From<Vec<u8>> for PacketInfo {
-    fn from(mut newdata: Vec<u8>) -> Self {
-        PacketInfo {
-        	eth_dst: newdata.drain(0..6).collect(),
-        	eth_src: newdata.drain(0..6).collect(),
-        	eth_type: newdata.drain(0..2).collect(),
-        	data: newdata,
-
-        }
-    }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
